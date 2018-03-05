@@ -1,0 +1,19 @@
+{
+  "name": "sudokusolver",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "yarn install && ion -c",
+    "watch": "ion -w"
+  },
+  "author": "KJK",
+  "license": "MIT",
+  "dependencies": {
+    "ion": "https://github.com/krisnye/ion.git"
+  },
+  "directories": {
+    "lib": "lib",
+    "src": "src"
+  }
+}

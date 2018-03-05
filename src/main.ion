@@ -1,0 +1,244 @@
+const
+    range = (n) -> [i for let i = 0; i < n; i++]
+    enableBit(n, i) -> n | (1 << i)
+    disableBit(n, i) -> n & ~(1 << i)
+    setBit(n, i, v) -> v is 0 ? disableBit(n, i) : enableBit(n, i)
+    nmask(n) -> ~((~0) << n)
+    bitSum(n, upto) ->
+        let sum = 0
+        for let i = 0; i < upto; i++
+            sum += (n >> i) & 1
+        return sum
+    firstOne(n, upto) ->
+        for let i = 0; i < upto; i++
+            if ((n >> i) & 1) is 1
+                return i
+    allOnes(n, upto) ->
+        return []
+            for let i = 0; i < upto; i++
+                if ((n >> i) & 1) is 1
+                    i
+
+    swap(arr, n, m) ->
+        let tmp = arr[n]
+        arr[n] = arr[m]
+        arr[m] = tmp
+    random(low, high) -> low + Math.floor(Math.random() * (high - low))
+    shuffle(arr) ->
+        for let i = arr.length - 1; i > 0; i--
+            swap(arr, i, random(0, i + 1))
+        return arr
+    permutation(size) -> shuffle(range(size))
+
+export class Board
+    constructor: (width) ->
+        @width = width
+        @widthSquared = width * width
+        @fullDomain = nmask(@widthSquared)
+        @area = @widthSquared * @widthSquared
+        @cells = [@fullDomain for i in range(@area)]
+        @undoStack = []
+        @netDomain = @area * @widthSquared
+
+    properties:
+        pushUndo: (undo) ->
+            @undoStack.push(undo)
+        startUndoGroup: ->
+            @undoStack.push(null)
+        undoGroup: ->
+            while true
+                let undo = @undoStack.pop()
+                if undo?
+                    let [x, y, v] = undo
+                    @set(x, y, v, true)
+                else
+                    return
+
+        domainSize: (n) -> bitSum(n, @widthSquared)
+        firstInDomain: (n) -> firstOne(n, @widthSquared)
+        domain: (n) -> allOnes(n, @widthSquared)
+
+        cellIndex: (x, y) -> y * @widthSquared + x
+        cellCord: (i) ->
+            let x = i % @widthSquared
+            let y = (i - x) / @widthSquared
+            return [x, y]
+        get: (x, y) -> @cells[@cellIndex(x, y)]
+        set: (x, y, v, undo = false) ->
+            let cell = @get(x, y)
+            let preDomainSize = @domainSize(cell)
+            let postDomainSize = @domainSize(v)
+            @netDomain += postDomainSize - preDomainSize
+            if not undo
+                @pushUndo([x, y, cell])
+            @cells[@cellIndex(x, y)] = v
+
+        removeDomain: (x, y, v) ->
+            let cell = @get(x, y)
+            let preDomainSize = @domainSize(cell)
+            cell = disableBit(@get(x, y), v)
+            @set(x, y, cell)
+            let domainSize = @domainSize(cell)
+            if domainSize is 0
+                return false
+            else if domainSize is 1 and preDomainSize > 1
+                let determinedValue = @firstInDomain(cell)
+                return @setAndUpdate(x, y, determinedValue)
+            else
+                return true
+        minCord: ->
+            let mini = 0
+            let min = Infinity
+            for i in range(@area)
+                let curr = @domainSize(@cells[i])
+                if curr > 1 and curr < min
+                    min = curr
+                    mini = i
+            return @cellCord(mini)
+        setAndUpdate: (x, y, v) ->
+            @set(x, y, 1 << v)
+            # Row
+            for xi in range(@widthSquared)
+                if xi isnt x
+                    if not @removeDomain(xi, y, v)
+                        return false
+            # Column
+            for yi in range(@widthSquared)
+                if yi isnt y
+                    if not @removeDomain(x, yi, v)
+                        return false
+            # Block
+            let blockX = x - (x % @width)
+            let blockY = y - (y % @width)
+            for dx in range(@width)
+                for dy in range(@width)
+                    let xi = blockX + dx
+                    let yi = blockY + dy
+                    if xi isnt x and yi isnt y
+                        if not @removeDomain(xi, yi, v)
+                            return false
+            return true
+        solve: ->
+            let [x, y] = @minCord()
+            let cell = @get(x, y)
+            let domain = @domain(cell)
+            for value in domain
+                @startUndoGroup()
+                if @setAndUpdate(x, y, value)
+                    if (@netDomain is @area) or @solve()
+                        return true
+                @undoGroup()
+            return false
+
+        displayValue: (x, y, count) ->
+            let cell = @get(x, y)
+            if count
+                return @domainSize(cell)
+            else
+                if @domainSize(cell) is 1
+                    return @firstInDomain(cell) + 1
+                else
+                    return '-'
+        print: (count) ->
+            for y in range(@widthSquared)
+                if (y % @width) is 0 and y isnt 0
+                    console.log(..)
+                        [' ' for i in range(@widthSquared + @width - 1)].join(' ')
+                let row = []
+                    for x in range(@widthSquared)
+                        if (x % @width) is 0 and x isnt 0
+                            ' '
+                        @displayValue(x, y, count)
+                console.log(row.join(' '))
+        swapCells: (x0, y0, x1, y1) ->
+            swap(@cells, @cellIndex(x0, y0), @cellIndex(x1, y1))
+        permuteBands: ->
+            let vertical = Math.random() > 0.5
+            let perm = permutation(@width)
+            for postBandIndex, preBandIndex in perm
+                if postBandIndex <= preBandIndex
+                    continue
+                for subIndex in range(@width)
+                    let postIndex = postBandIndex * @width + subIndex
+                    let preIndex = preBandIndex * @width + subIndex
+
+                    for perpendicularIndex in range(@widthSquared)
+                        if vertical
+                            @swapCells(..)
+                                postIndex, perpendicularIndex
+                                preIndex, perpendicularIndex
+                        else
+                            @swapCells(..)
+                                perpendicularIndex, postIndex
+                                perpendicularIndex, preIndex
+
+        permuteBand: ->
+            let vertical = Math.random() > 0.5
+            let perm = permutation(@width)
+            let bandIndex = random(0, @width)
+            for postSubIndex, preSubIndex in perm
+                if postSubIndex <= preSubIndex
+                    continue
+                let postIndex = bandIndex * @width + postSubIndex
+                let preIndex = bandIndex * @width + preSubIndex
+                for perpendicularIndex in range(@widthSquared)
+                    if vertical
+                        @swapCells(..)
+                            postIndex, perpendicularIndex
+                            preIndex, perpendicularIndex
+                    else
+                        @swapCells(..)
+                            perpendicularIndex, postIndex
+                            perpendicularIndex, preIndex
+        scramble: (n) ->
+            for i in range(n)
+                if Math.random() > 0.5
+                    @permuteBand()
+                else
+                    @permuteBands()
+
+    parse: (boardString) ->
+        let cells = []
+            for line in boardString.split('\n')
+                for cell in line.split(' ')
+                    cell
+        let widthSquared = Math.sqrt(cells.length)
+        let width = Math.sqrt(widthSquared)
+        let board = new Board(width)
+        for cellStr, i in cells
+            let cell = parseInt(cellStr)
+            if isNaN(cell)
+                continue
+            let [x, y] = board.cellCord(i)
+            board.setAndUpdate(x, y, cell - 1)
+        return board
+
+    test: ->
+
+        let board = Board.parse(..)
+            ""
+                1 2 3 4 5 6 7 8 9
+                4 5 6 7 8 9 1 2 3
+                7 8 9 1 2 3 4 5 6
+                2 3 1 6 7 4 8 9 5
+                8 7 5 9 1 2 3 6 4
+                6 9 4 5 3 8 2 1 7
+                3 1 7 2 6 5 9 4 8
+                5 4 2 8 9 7 6 3 1
+                9 6 8 3 4 1 5 7 2
+
+        console.log()
+        board.print(false)
+        console.log()
+        console.log()
+        board.scramble(100)
+        board.print(false)
+        console.log()
+
+        # console.log()
+        # console.log('Problem: ')
+        # board.print(false)
+        # if board.solve()
+        #     console.log()
+        #     console.log('Solution: ')
+        #     board.print(false)
