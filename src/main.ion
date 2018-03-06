@@ -73,7 +73,7 @@ export class Board
         minCord: ->
             let mini = 0
             let min = Infinity
-            for i in range(@area)
+            for let i = 0; i < @area; i++
                 let curr = bitCount(@cells[i])
                 if curr > 1 and curr < min
                     min = curr
@@ -82,20 +82,20 @@ export class Board
         setAndUpdate: (x, y, value) ->
             @set(x, y, 1 << value)
             # Row
-            for xi in range(@boardWidth)
+            for let xi = 0; xi < @boardWidth; xi++
                 if xi isnt x
                     if not @removeDomain(xi, y, value)
                         return false
             # Column
-            for yi in range(@boardWidth)
+            for let yi = 0; yi < @boardWidth; yi++
                 if yi isnt y
                     if not @removeDomain(x, yi, value)
                         return false
             # Block
             let blockX = x - (x % @blockWidth)
             let blockY = y - (y % @blockWidth)
-            for dx in range(@blockWidth)
-                for dy in range(@blockWidth)
+            for let dx = 0; dx < @blockWidth; dx++
+                for let dy = 0; dy < @blockWidth; dy++
                     let xi = blockX + dx
                     let yi = blockY + dy
                     if xi isnt x and yi isnt y
