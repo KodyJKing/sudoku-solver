@@ -2,7 +2,7 @@ const
     range = (n) -> [i for let i = 0; i < n; i++]
     enableBit(n, i) -> n | (1 << i)
     disableBit(n, i) -> n & ~(1 << i)
-    setBit(n, i, v) -> v is 0 ? disableBit(n, i) : enableBit(n, i)
+    setBit(n, i, value) -> value is 0 ? disableBit(n, i) : enableBit(n, i)
     bitMask(n) -> ~((~0) << n)
     bitCount(n) ->
         let m = n - ((n >> 1) & 0x55555555)
@@ -37,8 +37,8 @@ export class Board
             while true
                 let undo = @undoStack.pop()
                 if undo?
-                    let [x, y, v] = undo
-                    @set(x, y, v, true)
+                    let [x, y, value] = undo
+                    @set(x, y, value, true)
                 else
                     return
 
@@ -48,26 +48,26 @@ export class Board
             let y = (i - x) / @boardWidth
             return [x, y]
         get: (x, y) -> @cells[@cellIndex(x, y)]
-        set: (x, y, v, undo = false) ->
+        set: (x, y, value, undo = false) ->
             let cell = @get(x, y)
             let preDomainSize = bitCount(cell)
-            let postDomainSize = bitCount(v)
+            let postDomainSize = bitCount(value)
             @netDomainSize += postDomainSize - preDomainSize
             if not undo
                 @pushUndo([x, y, cell])
-            @cells[@cellIndex(x, y)] = v
+            @cells[@cellIndex(x, y)] = value
 
-        removeDomain: (x, y, v) ->
+        removeDomain: (x, y, value) ->
             let cell = @get(x, y)
             let preNetDomainSize = @netDomainSize
-            cell = disableBit(cell, v)
+            cell = disableBit(cell, value)
             @set(x, y, cell)
             let domainSize = bitCount(cell)
             if domainSize is 0
                 return false
             else if domainSize is 1 and preNetDomainSize > @netDomainSize
-                let determinedValue = leastSignificantBit(cell)
-                return @setAndUpdate(x, y, determinedValue)
+                let singleValue = leastSignificantBit(cell)
+                return @setAndUpdate(x, y, singleValue)
             else
                 return true
         minCord: ->
@@ -79,17 +79,17 @@ export class Board
                     min = curr
                     mini = i
             return @cellCord(mini)
-        setAndUpdate: (x, y, v) ->
-            @set(x, y, 1 << v)
+        setAndUpdate: (x, y, value) ->
+            @set(x, y, 1 << value)
             # Row
             for xi in range(@boardWidth)
                 if xi isnt x
-                    if not @removeDomain(xi, y, v)
+                    if not @removeDomain(xi, y, value)
                         return false
             # Column
             for yi in range(@boardWidth)
                 if yi isnt y
-                    if not @removeDomain(x, yi, v)
+                    if not @removeDomain(x, yi, value)
                         return false
             # Block
             let blockX = x - (x % @blockWidth)
@@ -99,7 +99,7 @@ export class Board
                     let xi = blockX + dx
                     let yi = blockY + dy
                     if xi isnt x and yi isnt y
-                        if not @removeDomain(xi, yi, v)
+                        if not @removeDomain(xi, yi, value)
                             return false
             return true
         solve: ->
