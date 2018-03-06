@@ -70,13 +70,13 @@ export class Board
                 return @setAndUpdate(x, y, singleValue)
             else
                 return true
-        minCord: ->
+        minDomainCord: ->
             let mini = 0
             let min = Infinity
             for let i = 0; i < @area; i++
-                let curr = bitCount(@cells[i])
-                if curr > 1 and curr < min
-                    min = curr
+                let domainSize = bitCount(@cells[i])
+                if domainSize > 1 and domainSize < min
+                    min = domainSize
                     mini = i
             return @cellCord(mini)
         setAndUpdate: (x, y, value) ->
@@ -103,7 +103,7 @@ export class Board
                             return false
             return true
         solve: ->
-            let [x, y] = @minCord()
+            let [x, y] = @minDomainCord()
             let cell = @get(x, y)
             let domain = allBits(cell)
             for value in domain
