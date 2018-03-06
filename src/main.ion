@@ -19,17 +19,6 @@ const
                 if ((n >> i) & 1) is 1
                     i
 
-    swap(arr, n, m) ->
-        let tmp = arr[n]
-        arr[n] = arr[m]
-        arr[m] = tmp
-    random(low, high) -> low + Math.floor(Math.random() * (high - low))
-    shuffle(arr) ->
-        for let i = arr.length - 1; i > 0; i--
-            swap(arr, i, random(0, i + 1))
-        return arr
-    permutation(size) -> shuffle(range(size))
-
 export class Board
     constructor: (blockWidth) ->
         @blockWidth = blockWidth
@@ -151,67 +140,6 @@ export class Board
                         @displayValue(x, y, count)
                 console.log(row.join(' '))
 
-        swapCells: (x0, y0, x1, y1) ->
-            swap(@cells, @cellIndex(x0, y0), @cellIndex(x1, y1))
-        permuteBands: ->
-            let vertical = Math.random() > 0.5
-            let perm = permutation(@blockWidth)
-            for postBlockIndex, preBlockIndex in perm
-                if postBlockIndex <= preBlockIndex
-                    continue
-                for subIndex in range(@blockWidth)
-                    let postIndex = postBlockIndex * @blockWidth + subIndex
-                    let preIndex = preBlockIndex * @blockWidth + subIndex
-
-                    for otherIndex in range(@boardWidth)
-                        if vertical
-                            @swapCells(..)
-                                postIndex, otherIndex
-                                preIndex, otherIndex
-                        else
-                            @swapCells(..)
-                                otherIndex, postIndex
-                                otherIndex, preIndex
-        permuteBand: ->
-            let vertical = Math.random() > 0.5
-            let perm = permutation(@blockWidth)
-            let blockIndex = random(0, @blockWidth)
-            for postSubIndex, preSubIndex in perm
-                if postSubIndex <= preSubIndex
-                    continue
-                let postIndex = blockIndex * @blockWidth + postSubIndex
-                let preIndex = blockIndex * @blockWidth + preSubIndex
-                for otherIndex in range(@boardWidth)
-                    if vertical
-                        @swapCells(..)
-                            postIndex, otherIndex
-                            preIndex, otherIndex
-                    else
-                        @swapCells(..)
-                            otherIndex, postIndex
-                            otherIndex, preIndex
-        scramble: (n) ->
-            for i in range(n)
-                if Math.random() > 0.5
-                    @permuteBand()
-                else
-                    @permuteBands()
-    
-    randomSolution: (n) ->
-        let board = Board.parse(..)
-            ""
-                1 2 3 4 5 6 7 8 9
-                4 5 6 7 8 9 1 2 3
-                7 8 9 1 2 3 4 5 6
-                2 3 1 6 7 4 8 9 5
-                8 7 5 9 1 2 3 6 4
-                6 9 4 5 3 8 2 1 7
-                3 1 7 2 6 5 9 4 8
-                5 4 2 8 9 7 6 3 1
-                9 6 8 3 4 1 5 7 2
-        board.scramble(n)
-        return board
-
     parse: (boardString) ->
         let cells = []
             for line in boardString.split('\n')
@@ -241,16 +169,6 @@ export class Board
                 - - - - 8 1 - - -
                 - - 2 - - - - 5 -
                 - 4 - - - - 3 - -
-            # ""
-            #     - - 3 - - - - - -
-            #     8 - 9 4 6 - 7 - 2
-            #     2 - - - 1 8 6 - -
-            #     - - - - - 6 - 7 -
-            #     - - 8 - - - 4 - -
-            #     - 7 - 8 - - - - -
-            #     - - 2 9 4 - - - 5
-            #     4 - 6 - 3 2 8 - 7
-            #     - - - - - - 2 - -
         let solved = board.solve()
         console.timeEnd('solved')
         if solved
