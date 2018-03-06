@@ -4,18 +4,17 @@ const
     disableBit(n, i) -> n & ~(1 << i)
     setBit(n, i, v) -> v is 0 ? disableBit(n, i) : enableBit(n, i)
     bitMask(n) -> ~((~0) << n)
-    bitSum(n, upto) ->
-        let sum = 0
-        for let i = 0; i < upto; i++
-            sum += (n >> i) & 1
-        return sum
-    leastSignificantBit(n, upto) ->
-        for let i = 0; i < upto; i++
+    bitCount(n) ->
+        let m = n - ((n >> 1) & 0x55555555)
+        m = (m & 0x33333333) + ((m >> 2) & 0x33333333)
+        return ((m + (m >> 4) & 0xF0F0F0F) * 0x1010101) >> 24
+    leastSignificantBit(n) ->
+        for let i = 0; i < 32; i++
             if ((n >> i) & 1) is 1
                 return i
-    allBits(n, upto) ->
+    allBits(n) ->
         return []
-            for let i = 0; i < upto; i++
+            for let i = 0; i < 32; i++
                 if ((n >> i) & 1) is 1
                     i
 
@@ -43,10 +42,6 @@ export class Board
                 else
                     return
 
-        domainSize: (n) -> bitSum(n, @boardWidth)
-        firstInDomain: (n) -> leastSignificantBit(n, @boardWidth)
-        domain: (n) -> allBits(n, @boardWidth)
-
         cellIndex: (x, y) -> y * @boardWidth + x
         cellCord: (i) ->
             let x = i % @boardWidth
@@ -55,8 +50,8 @@ export class Board
         get: (x, y) -> @cells[@cellIndex(x, y)]
         set: (x, y, v, undo = false) ->
             let cell = @get(x, y)
-            let preDomainSize = @domainSize(cell)
-            let postDomainSize = @domainSize(v)
+            let preDomainSize = bitCount(cell)
+            let postDomainSize = bitCount(v)
             @netDomainSize += postDomainSize - preDomainSize
             if not undo
                 @pushUndo([x, y, cell])
@@ -67,11 +62,11 @@ export class Board
             let preNetDomainSize = @netDomainSize
             cell = disableBit(cell, v)
             @set(x, y, cell)
-            let domainSize = @domainSize(cell)
+            let domainSize = bitCount(cell)
             if domainSize is 0
                 return false
             else if domainSize is 1 and preNetDomainSize > @netDomainSize
-                let determinedValue = @firstInDomain(cell)
+                let determinedValue = leastSignificantBit(cell)
                 return @setAndUpdate(x, y, determinedValue)
             else
                 return true
@@ -79,7 +74,7 @@ export class Board
             let mini = 0
             let min = Infinity
             for i in range(@area)
-                let curr = @domainSize(@cells[i])
+                let curr = bitCount(@cells[i])
                 if curr > 1 and curr < min
                     min = curr
                     mini = i
@@ -110,7 +105,7 @@ export class Board
         solve: ->
             let [x, y] = @minCord()
             let cell = @get(x, y)
-            let domain = @domain(cell)
+            let domain = allBits(cell)
             for value in domain
                 @startUndoGroup()
                 if @setAndUpdate(x, y, value)
@@ -122,10 +117,10 @@ export class Board
         displayValue: (x, y, showDomainSize) ->
             let cell = @get(x, y)
             if showDomainSize
-                return @domainSize(cell)
+                return bitCount(cell)
             else
-                if @domainSize(cell) is 1
-                    return @firstInDomain(cell) + 1
+                if bitCount(cell) is 1
+                    return leastSignificantBit(cell) + 1
                 else
                     return '-'
         print: (showDomainSize = false) ->
