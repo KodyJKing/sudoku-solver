@@ -128,7 +128,7 @@ export class Board
                     return @firstInDomain(cell) + 1
                 else
                     return '-'
-        print: (count) ->
+        print: (count = false) ->
             for y in range(@boardWidth)
                 if (y % @blockWidth) is 0 and y isnt 0
                     console.log(..)
@@ -174,4 +174,4 @@ export class Board
         if solved
             console.log()
             console.log('Solution: ')
-            board.print(false)
+            board.print()
