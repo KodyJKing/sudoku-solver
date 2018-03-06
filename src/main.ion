@@ -31,14 +31,14 @@ const
     permutation(size) -> shuffle(range(size))
 
 export class Board
-    constructor: (width) ->
-        @width = width
-        @widthSquared = width * width
-        @fullDomain = nmask(@widthSquared)
-        @area = @widthSquared * @widthSquared
+    constructor: (blockWidth) ->
+        @blockWidth = blockWidth
+        @boardWidth = blockWidth * blockWidth
+        @fullDomain = nmask(@boardWidth)
+        @area = @boardWidth * @boardWidth
         @cells = [@fullDomain for i in range(@area)]
         @undoStack = []
-        @netDomain = @area * @widthSquared
+        @netDomain = @area * @boardWidth
 
     properties:
         pushUndo: (undo) ->
@@ -54,14 +54,14 @@ export class Board
                 else
                     return
 
-        domainSize: (n) -> bitSum(n, @widthSquared)
-        firstInDomain: (n) -> firstOne(n, @widthSquared)
-        domain: (n) -> allOnes(n, @widthSquared)
+        domainSize: (n) -> bitSum(n, @boardWidth)
+        firstInDomain: (n) -> firstOne(n, @boardWidth)
+        domain: (n) -> allOnes(n, @boardWidth)
 
-        cellIndex: (x, y) -> y * @widthSquared + x
+        cellIndex: (x, y) -> y * @boardWidth + x
         cellCord: (i) ->
-            let x = i % @widthSquared
-            let y = (i - x) / @widthSquared
+            let x = i % @boardWidth
+            let y = (i - x) / @boardWidth
             return [x, y]
         get: (x, y) -> @cells[@cellIndex(x, y)]
         set: (x, y, v, undo = false) ->
@@ -75,13 +75,13 @@ export class Board
 
         removeDomain: (x, y, v) ->
             let cell = @get(x, y)
-            let preDomainSize = @domainSize(cell)
-            cell = disableBit(@get(x, y), v)
+            let preNetDomainSize = @netDomain
+            cell = disableBit(cell, v)
             @set(x, y, cell)
             let domainSize = @domainSize(cell)
             if domainSize is 0
                 return false
-            else if domainSize is 1 and preDomainSize > 1
+            else if domainSize is 1 and preNetDomainSize > @netDomain
                 let determinedValue = @firstInDomain(cell)
                 return @setAndUpdate(x, y, determinedValue)
             else
@@ -98,20 +98,20 @@ export class Board
         setAndUpdate: (x, y, v) ->
             @set(x, y, 1 << v)
             # Row
-            for xi in range(@widthSquared)
+            for xi in range(@boardWidth)
                 if xi isnt x
                     if not @removeDomain(xi, y, v)
                         return false
             # Column
-            for yi in range(@widthSquared)
+            for yi in range(@boardWidth)
                 if yi isnt y
                     if not @removeDomain(x, yi, v)
                         return false
             # Block
-            let blockX = x - (x % @width)
-            let blockY = y - (y % @width)
-            for dx in range(@width)
-                for dy in range(@width)
+            let blockX = x - (x % @blockWidth)
+            let blockY = y - (y % @blockWidth)
+            for dx in range(@blockWidth)
+                for dy in range(@blockWidth)
                     let xi = blockX + dx
                     let yi = blockY + dy
                     if xi isnt x and yi isnt y
@@ -140,13 +140,13 @@ export class Board
                 else
                     return '-'
         print: (count) ->
-            for y in range(@widthSquared)
-                if (y % @width) is 0 and y isnt 0
+            for y in range(@boardWidth)
+                if (y % @blockWidth) is 0 and y isnt 0
                     console.log(..)
-                        [' ' for i in range(@widthSquared + @width - 1)].join(' ')
+                        [' ' for i in range(@boardWidth + @blockWidth - 1)].join(' ')
                 let row = []
-                    for x in range(@widthSquared)
-                        if (x % @width) is 0 and x isnt 0
+                    for x in range(@boardWidth)
+                        if (x % @blockWidth) is 0 and x isnt 0
                             ' '
                         @displayValue(x, y, count)
                 console.log(row.join(' '))
@@ -155,41 +155,41 @@ export class Board
             swap(@cells, @cellIndex(x0, y0), @cellIndex(x1, y1))
         permuteBands: ->
             let vertical = Math.random() > 0.5
-            let perm = permutation(@width)
-            for postBandIndex, preBandIndex in perm
-                if postBandIndex <= preBandIndex
+            let perm = permutation(@blockWidth)
+            for postBlockIndex, preBlockIndex in perm
+                if postBlockIndex <= preBlockIndex
                     continue
-                for subIndex in range(@width)
-                    let postIndex = postBandIndex * @width + subIndex
-                    let preIndex = preBandIndex * @width + subIndex
+                for subIndex in range(@blockWidth)
+                    let postIndex = postBlockIndex * @blockWidth + subIndex
+                    let preIndex = preBlockIndex * @blockWidth + subIndex
 
-                    for perpendicularIndex in range(@widthSquared)
+                    for otherIndex in range(@boardWidth)
                         if vertical
                             @swapCells(..)
-                                postIndex, perpendicularIndex
-                                preIndex, perpendicularIndex
+                                postIndex, otherIndex
+                                preIndex, otherIndex
                         else
                             @swapCells(..)
-                                perpendicularIndex, postIndex
-                                perpendicularIndex, preIndex
+                                otherIndex, postIndex
+                                otherIndex, preIndex
         permuteBand: ->
             let vertical = Math.random() > 0.5
-            let perm = permutation(@width)
-            let bandIndex = random(0, @width)
+            let perm = permutation(@blockWidth)
+            let blockIndex = random(0, @blockWidth)
             for postSubIndex, preSubIndex in perm
                 if postSubIndex <= preSubIndex
                     continue
-                let postIndex = bandIndex * @width + postSubIndex
-                let preIndex = bandIndex * @width + preSubIndex
-                for perpendicularIndex in range(@widthSquared)
+                let postIndex = blockIndex * @blockWidth + postSubIndex
+                let preIndex = blockIndex * @blockWidth + preSubIndex
+                for otherIndex in range(@boardWidth)
                     if vertical
                         @swapCells(..)
-                            postIndex, perpendicularIndex
-                            preIndex, perpendicularIndex
+                            postIndex, otherIndex
+                            preIndex, otherIndex
                     else
                         @swapCells(..)
-                            perpendicularIndex, postIndex
-                            perpendicularIndex, preIndex
+                            otherIndex, postIndex
+                            otherIndex, preIndex
         scramble: (n) ->
             for i in range(n)
                 if Math.random() > 0.5
@@ -217,9 +217,9 @@ export class Board
             for line in boardString.split('\n')
                 for cell in line.split(' ')
                     cell
-        let widthSquared = Math.sqrt(cells.length)
-        let width = Math.sqrt(widthSquared)
-        let board = new Board(width)
+        let boardWidth = Math.sqrt(cells.length)
+        let blockWidth = Math.sqrt(boardWidth)
+        let board = new Board(blockWidth)
         for cellStr, i in cells
             let cell = parseInt(cellStr)
             if isNaN(cell)
@@ -229,22 +229,31 @@ export class Board
         return board
 
     test: ->
+        console.time('solved')
         let board = Board.parse(..)
             ""
-                - - 3 - - - - - -
-                8 - 9 4 6 - 7 - 2
-                2 - - - 1 8 6 - -
-                - - - - - 6 - 7 -
-                - - 8 - - - 4 - -
-                - 7 - 8 - - - - -
-                - - 2 9 4 - - - 5
-                4 - 6 - 3 2 8 - 7
-                - - - - - - 2 - -
-                
-        console.log()
-        console.log('Problem: ')
-        board.print(false)
-        if board.solve()
+                - - - 7 - - - - -
+                1 - - - - - - - -
+                - - - 4 3 - 2 - -
+                - - - - - - - - 6
+                - - - 5 - 9 - - -
+                - - - - - - 4 1 8
+                - - - - 8 1 - - -
+                - - 2 - - - - 5 -
+                - 4 - - - - 3 - -
+            # ""
+            #     - - 3 - - - - - -
+            #     8 - 9 4 6 - 7 - 2
+            #     2 - - - 1 8 6 - -
+            #     - - - - - 6 - 7 -
+            #     - - 8 - - - 4 - -
+            #     - 7 - 8 - - - - -
+            #     - - 2 9 4 - - - 5
+            #     4 - 6 - 3 2 8 - 7
+            #     - - - - - - 2 - -
+        let solved = board.solve()
+        console.timeEnd('solved')
+        if solved
             console.log()
             console.log('Solution: ')
             board.print(false)
