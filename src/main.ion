@@ -3,17 +3,17 @@ const
     enableBit(n, i) -> n | (1 << i)
     disableBit(n, i) -> n & ~(1 << i)
     setBit(n, i, v) -> v is 0 ? disableBit(n, i) : enableBit(n, i)
-    nmask(n) -> ~((~0) << n)
+    bitMask(n) -> ~((~0) << n)
     bitSum(n, upto) ->
         let sum = 0
         for let i = 0; i < upto; i++
             sum += (n >> i) & 1
         return sum
-    firstOne(n, upto) ->
+    leastSignificantBit(n, upto) ->
         for let i = 0; i < upto; i++
             if ((n >> i) & 1) is 1
                 return i
-    allOnes(n, upto) ->
+    allBits(n, upto) ->
         return []
             for let i = 0; i < upto; i++
                 if ((n >> i) & 1) is 1
@@ -23,7 +23,7 @@ export class Board
     constructor: (blockWidth) ->
         @blockWidth = blockWidth
         @boardWidth = blockWidth * blockWidth
-        @fullDomain = nmask(@boardWidth)
+        @fullDomain = bitMask(@boardWidth)
         @area = @boardWidth * @boardWidth
         @netDomainSize = @area * @boardWidth
         @cells = [@fullDomain for i in range(@area)]
@@ -44,8 +44,8 @@ export class Board
                     return
 
         domainSize: (n) -> bitSum(n, @boardWidth)
-        firstInDomain: (n) -> firstOne(n, @boardWidth)
-        domain: (n) -> allOnes(n, @boardWidth)
+        firstInDomain: (n) -> leastSignificantBit(n, @boardWidth)
+        domain: (n) -> allBits(n, @boardWidth)
 
         cellIndex: (x, y) -> y * @boardWidth + x
         cellCord: (i) ->
