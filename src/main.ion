@@ -25,9 +25,9 @@ export class Board
         @boardWidth = blockWidth * blockWidth
         @fullDomain = nmask(@boardWidth)
         @area = @boardWidth * @boardWidth
+        @netDomainSize = @area * @boardWidth
         @cells = [@fullDomain for i in range(@area)]
         @undoStack = []
-        @netDomain = @area * @boardWidth
 
     properties:
         pushUndo: (undo) ->
@@ -57,20 +57,20 @@ export class Board
             let cell = @get(x, y)
             let preDomainSize = @domainSize(cell)
             let postDomainSize = @domainSize(v)
-            @netDomain += postDomainSize - preDomainSize
+            @netDomainSize += postDomainSize - preDomainSize
             if not undo
                 @pushUndo([x, y, cell])
             @cells[@cellIndex(x, y)] = v
 
         removeDomain: (x, y, v) ->
             let cell = @get(x, y)
-            let preNetDomainSize = @netDomain
+            let preNetDomainSize = @netDomainSize
             cell = disableBit(cell, v)
             @set(x, y, cell)
             let domainSize = @domainSize(cell)
             if domainSize is 0
                 return false
-            else if domainSize is 1 and preNetDomainSize > @netDomain
+            else if domainSize is 1 and preNetDomainSize > @netDomainSize
                 let determinedValue = @firstInDomain(cell)
                 return @setAndUpdate(x, y, determinedValue)
             else
@@ -114,21 +114,21 @@ export class Board
             for value in domain
                 @startUndoGroup()
                 if @setAndUpdate(x, y, value)
-                    if (@netDomain is @area) or @solve()
+                    if (@netDomainSize is @area) or @solve()
                         return true
                 @undoGroup()
             return false
 
-        displayValue: (x, y, count) ->
+        displayValue: (x, y, showDomainSize) ->
             let cell = @get(x, y)
-            if count
+            if showDomainSize
                 return @domainSize(cell)
             else
                 if @domainSize(cell) is 1
                     return @firstInDomain(cell) + 1
                 else
                     return '-'
-        print: (count = false) ->
+        print: (showDomainSize = false) ->
             for y in range(@boardWidth)
                 if (y % @blockWidth) is 0 and y isnt 0
                     console.log(..)
@@ -137,7 +137,7 @@ export class Board
                     for x in range(@boardWidth)
                         if (x % @blockWidth) is 0 and x isnt 0
                             ' '
-                        @displayValue(x, y, count)
+                        @displayValue(x, y, showDomainSize)
                 console.log(row.join(' '))
 
     parse: (boardString) ->
