@@ -4,6 +4,7 @@ const
     disableBit(n, i) -> n & ~(1 << i)
     setBit(n, i, value) -> value is 0 ? disableBit(n, i) : enableBit(n, i)
     bitMask(n) -> ~((~0) << n)
+    # http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
     bitCount(n) ->
         let m = n - ((n >> 1) & 0x55555555)
         m = (m & 0x33333333) + ((m >> 2) & 0x33333333)
